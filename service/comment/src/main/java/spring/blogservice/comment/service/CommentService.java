@@ -6,10 +6,13 @@ import org.springframework.transaction.annotation.Transactional;
 import spring.blogservice.comment.entity.Comment;
 import spring.blogservice.comment.repository.CommentRepository;
 import spring.blogservice.comment.service.request.CommentCreateRequest;
+import spring.blogservice.comment.service.response.CommentPageResponse;
 import spring.blogservice.comment.service.response.CommentResponse;
 import spring.blogservice.common.snowflake.Snowflake;
 
+import java.util.List;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -48,6 +51,23 @@ public class CommentService {
                     }
                 });
     }
+
+    public CommentPageResponse readAll(Long articleId, Long page, Long pageSize) {
+        return CommentPageResponse.of(
+                commentRepository.findAll(articleId, (page - 1) * pageSize, pageSize).stream()
+                        .map(CommentResponse::from)
+                        .toList(),
+                commentRepository.count(articleId, PageLimitCalculator.calculatePageLimit(page, pageSize, 10L))
+        );
+    }
+
+    public List<CommentResponse> readAll(Long articleId, Long lastParentCommentId, Long lastCommentId, Long limit) {
+        List<Comment> comments = lastParentCommentId == null || lastCommentId == null ?
+                commentRepository.findAllInfiniteScroll(articleId, limit) :
+                commentRepository.findAllInfiniteScroll(articleId, lastParentCommentId, lastCommentId, limit);
+        return comments.stream().map(CommentResponse::from).toList();
+    }
+
 
     private void hardDelete(Comment comment) {
         commentRepository.delete(comment);

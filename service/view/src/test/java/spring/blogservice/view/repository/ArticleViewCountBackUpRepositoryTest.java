@@ -30,6 +30,7 @@ class ArticleViewCountBackUpRepositoryTest {
         articleViewCountBackUpRepository.save(
                 ArticleViewCount.init(0L, 1L)
         );
+
         entityManager.flush();
         entityManager.clear();
 
